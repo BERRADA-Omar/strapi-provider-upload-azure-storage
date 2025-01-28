@@ -1,6 +1,6 @@
 {
   "name": "strapi-provider-upload-azure-storage",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "license": "MIT",
   "main": "dist/index.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "lint": "eslint . --ext .js,.ts",
     "lint:fix": "eslint . --ext .js,.ts --fix",
     "prebuild": "rm -rf dist",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "npm run build"
   },
   "directories": {
     "lib": "./lib"
@@ -20,7 +20,10 @@
   "strapi": {
     "isProvider": true
   },
-  "repository": "https://github.com/jakeFeldman/strapi-provider-upload-azure-storage",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BERRADA-Omar/strapi-provider-upload-azure-storage.git"
+  },
   "homepage": "http://strapi.io",
   "keywords": [
     "upload",
@@ -39,5 +42,11 @@
     "eslint-plugin-unused-imports": "^2.0.0",
     "prettier": "^2.8.4",
     "typescript": "^4.9.5"
+  },
+  "description": "This package is currently unmaintained.",
+  "author": "",
+  "types": "./dist/index.d.ts",
+  "bugs": {
+    "url": "https://github.com/BERRADA-Omar/strapi-provider-upload-azure-storage/issues"
   }
 }

@@ -1,6 +1,7 @@
 import { DefaultAzureCredential } from '@azure/identity';
 import {
     AnonymousCredential,
+    BlobSASPermissions,
     BlobServiceClient,
     newPipeline,
     PublicAccessType,
@@ -71,7 +72,7 @@ function makeBlobServiceClient(config: Config) {
             const sasToken = trimParam(config.sasToken);
             if (sasToken != '') {
                 const anonymousCredential = new AnonymousCredential();
-                return new BlobServiceClient(`${serviceBaseURL}${sasToken}`, anonymousCredential);
+                return new BlobServiceClient(`${serviceBaseURL}?${sasToken}`, anonymousCredential);
             }
             const sharedKeyCredential = new StorageSharedKeyCredential(account, accountKey);
             const pipeline = newPipeline(sharedKeyCredential);
@@ -138,8 +139,8 @@ async function handleUpload(
 
     await client.uploadStream(
         file.stream,
-        (config.uploadOptions || uploadOptions).bufferSize,
-        (config.uploadOptions || uploadOptions).maxBuffers,
+        config.uploadOptions?.bufferSize ?? uploadOptions!.bufferSize,
+        config.uploadOptions?.maxBuffers ?? uploadOptions!.maxBuffers,
         options
     );
 }
@@ -153,6 +154,28 @@ async function handleDelete(
     const client = containerClient.getBlobClient(getFileName(config.defaultPath, file));
     await client.delete();
     file.url = client.url;
+}
+
+async function handleGetSignedUrl(
+    config: Config,
+    blobSvcClient: BlobServiceClient,
+    file: StrapiFile
+): Promise<{url: string}> {
+    const containerClient = blobSvcClient.getContainerClient(trimParam(config.containerName));
+    const blobClient = containerClient.getBlobClient(getFileName(config.defaultPath, file));
+    
+    const startsOn = new Date(Date.now() - 30000); // 30 seconds in the past, in UTC
+    const expiresOn = new Date(startsOn.getTime() + (24 * 60 * 60 * 1000)); // 24 hours in the future, in UTC
+
+    const sasToken = await blobClient.generateSasUrl({
+        permissions: BlobSASPermissions.parse("r"),  // Read only
+        expiresOn,
+        startsOn
+    });
+
+    // console.debug(`Generated SAS token for ${file.url} ==> ${sasToken}`);
+
+    return {url: sasToken};
 }
 
 module.exports = {
@@ -204,16 +227,23 @@ module.exports = {
         },
     },
     init: (config: Config) => {
-        const blobSvcClient = makeBlobServiceClient(config);
+        const client = makeBlobServiceClient(config);
+
         return {
             upload(file: StrapiFile) {
-                return handleUpload(config, blobSvcClient, file);
+                return handleUpload(config, client, file);
             },
             uploadStream(file: StrapiFile) {
-                return handleUpload(config, blobSvcClient, file);
+                return handleUpload(config, client, file);
             },
             delete(file: StrapiFile) {
-                return handleDelete(config, blobSvcClient, file);
+                return handleDelete(config, client, file);
+            },
+            isPrivate(file: StrapiFile) {
+                return true;
+            },
+            getSignedUrl(file: StrapiFile) {
+                return handleGetSignedUrl(config, client, file);
             },
         };
     },
