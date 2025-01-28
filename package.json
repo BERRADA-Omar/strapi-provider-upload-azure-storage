@@ -1,5 +1,5 @@
 {
-  "name": "strapi-provider-upload-azure-storage",
+  "name": "strapi-provider-upload-azure-storage-secure",
   "version": "3.4.2",
   "license": "MIT",
   "main": "dist/index.js",
